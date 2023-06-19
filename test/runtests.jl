@@ -1,6 +1,14 @@
 using Nestings
 using Test
 
-@testset "Nestings.jl" begin
-    # Write your tests here.
+
+const tests = [
+    "nested"
+]
+
+for t in tests
+    @testset "Test $t" begin
+        include("$t.jl")
+    end
 end
+

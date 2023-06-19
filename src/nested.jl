@@ -145,7 +145,7 @@ See also `indexends`.
 """
 function indexdata(z::Nesting{T}) where {T} # Is this a good name? Alternativ: index_data
     iv = Dict{Vector{Int},T}([] => start(z))
-    _add_nxt_indi!(indexdata, iv, nestings(z))
+    _add_next_indices!(indexdata, iv, nestings(z))
     return iv
 end
 
@@ -170,12 +170,12 @@ See also `indexends`.
 """
 function indexends(z::Nesting{T}) where {T}
     iv = Dict{Vector{Int},T}()
-    depth(z) == 0 ? iv[[]] = start(z) : _add_nxt_indi!(indexends, iv, nestings(z))
+    depth(z) == 0 ? iv[[]] = start(z) : _add_next_indices!(indexends, iv, nestings(z))
     return iv
 end
 
 # auxiliary function used in indexdata and indexends
-function _add_nxt_indi!(fun, iv, nst)
+function _add_next_indices!(fun, iv, nst)
     for (k, w) in enumerate(nst)
         iw = fun(w)
         for i in keys(iw)
@@ -230,7 +230,6 @@ map(f::Function, z::NestedValues) = isempty(nestings(z)) ? NestedValues(f(start(
 
 
 ## other methods
-
 
 """
     allnest(b) -> Bool
