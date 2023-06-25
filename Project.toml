@@ -4,6 +4,7 @@ authors = ["ch"]
 version = "1.0.0-DEV"
 
 [deps]
+AlphaStableDistributions = "f20549b4-2d50-407f-863c-cdd202ba59a3"
 Copulas = "ae264745-0b69-425e-9d9d-cf662c5eec93"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 
