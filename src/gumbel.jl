@@ -1,53 +1,63 @@
 # Gumbel Copula 
 using AlphaStableDistributions
-"""
-Abstract Type for nested archimedean copulas
 
-See  https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf
 
-"""
-abstract type NestedArchimedeanCopula end # not used yet
 
-struct Gumbel
-    nnc::Int # number of non-nested components
+abstract type Archimedean end
+
+struct Gumbel <: Archimedean
     theta::Float64
-    Gumbel(nnc, theta) = nnc >= 0 && theta >= 1.0 ? new(nnc, theta) :
-                         throw(ArgumentError("nn must not be negative and theta must be >= 1.0"))
+    nnc::Int
+    Gumbel(theta,nnc) = theta >= 1.0 && nnc >= 0 ? new(theta, nnc) : throw(ArgumentError("Gumbel theta must be >= 1.0 and number "))
 end
 
-generator(g::Gumbel) = t -> exp(-t^(1 / g.theta))
-invgenerator(g::Gumbel) = x -> (-log(x))^g.theta
+generator(a::Gumbel) = t -> exp(-t^(1 / a.theta))
+invgenerator(a::Gumbel) = x -> (-log(x))^a.theta
 
 
 
-# # later on, we would need something like this
-# struct NestedGumbel{N} <: NestedArchimedeanCopula
-#     g::NestedValues{Gumbel} # N = num_marginals
-#     #_validate_monotonicity of theta
-# end
-# # forward the relevant methods from Nestings
-# # For now, it is sufficient to define
-const NestedGumbel = NestedValues{Gumbel}
+#See  https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf
 
-function _validate_nonotonicity(gg::NestedValues{Gumbel})
-    for h in nestings(gg)
-        start(gg).theta .<= start(h).theta || return false
-        _validate_nonotonicity(h) || return false
+
+struct Nested{A <: Archimedean,N} <: Nesting{A}
+    a::NestedValues{A} # 
+    function Nested(a)
+        _validate_monotonicity(a) || throw(ArgumentError("Monotonicity condition for generators not fulfilled."))
+        return new{eltype(a),num_marginals(a)}(a)
+    end
+end
+
+
+function _validate_monotonicity(g::NestedValues{Gumbel})
+    for h in nestings(g)
+        start(g).theta .<= start(h).theta || return false
+        _validate_monotonicity(h) || return false
     end
     return true
 end
 
+_validate_monotonicity(a::NestedValues{Archimedean}) = error("Method for Type $(type(a)) not implemented")
 
 """
     num_marginals(g) 
 
 The number of marginals of a the copula
 """
-function num_marginals(gg::NestedGumbel)
-    n = start(gg).nnc
-    for h in nestings(gg) n += num_marginals(h) end
+function num_marginals(g::NestedValues{Gumbel})
+    n = start(g).nnc
+    for h in nestings(g) n += num_marginals(h) end
     return n
 end
+
+num_marginals(a::NestedValues{Archimedean}) = error("Method for Type $(type(a)) not implemented")
+
+
+# methods for Nesting
+
+start(c::Nested{Archimedean}) = start(c.a)
+nestings(c::Nested{Archimedean}) = Nested.(nestings(c.a))
+map(f,c::Nested{Archimedean}) = map(f,c.a)
+
 
 """
     g(u...)   
@@ -56,7 +66,7 @@ Calling a copula to evaluate its multivariate distribution function
 """
 (g::Gumbel)(u::Float64...) = generator(g)(sum(invgenerator(g)(v) for v in u)) # works for any number of marginals
 
-function (gg::NestedGumbel)(u::Float64...) # later (gg::NestedGumbel{N})(u::Vararg{N,Float64})
+function (gg::Nested{Gumbel})(u::Float64...) # later (gg::NestedGumbel{N})(u::Vararg{N,Float64})
     length(u) == num_marginals(gg) || throw(DomainError(u,
         "$(num_marginals(gg)) arguments needed, equal to number of copulas marginals."))
     all(0.0 .<= u) && all(u .<= 1.0) || throw(DomainError(u, "all arguments must be between 0 and 1"))
@@ -83,11 +93,11 @@ end
 
 Drawing `nsmp` independent samples from  `NestedGumbel` copula.
 """
-function sample(gg::NestedGumbel, nsmp)
+function sample(gg::Nested{Gumbel}, nsmp)
     smp = rand(start(gg).nnc, nsmp)
     theta0 = start(gg).theta
     for h in nestings(gg) # here Gumbel is easier than the other NestedArchimedeans 
-        h1 = map(x -> Gumbel(x.nnc, x.theta / theta0), h)
+        h1 = map(x -> Gumbel(x.theta / theta0, x.nnc), h)
         smp = [smp; sample(h1, nsmp)]
     end
     theta0 > 1.0 + 1e-10 || return smp # theta0 = 1 is the independent case and thus no mixing needed. 
@@ -107,5 +117,5 @@ julia> uppertaildep(nest(Gumbel(2, 1.1), (Gumbel(3, 1.4), Gumbel(2, 2.5))))
 NestedValues{Float64}: (0.12213817867658738, (0.3593292879847241, 0.6804920892271058))
 ```
 """
-uppertaildep(gg::NestedGumbel) = map(g -> 2 - 2^(1 / g.theta), gg)
+uppertaildep(gg::Nested{Gumbel}) = map(g -> 2 - 2^(1 / g.theta), gg)
 
