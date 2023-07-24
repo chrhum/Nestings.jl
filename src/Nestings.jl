@@ -1,6 +1,7 @@
 module Nestings
 
 using Graphs, AlphaStableDistributions
+using Lazy: @forward
 
 import Base: eltype, show, ==, map, rand
 
@@ -12,7 +13,7 @@ export Nesting, NestedValues, nest, represent,
 
 
 include("gumbel.jl")
-export Gumbel, NestedGumbel, 
-    generator, invgenerator, num_marginals, sample, uppertaildep
+export Archimedean, Gumbel, Copula, NestedCopula, nestedcopula, 
+    generator, inverse, dimension,  upper_taildep, lower_taildep, family
 
 end

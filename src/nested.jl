@@ -7,6 +7,8 @@ abstract type Nesting{T} end
 
 eltype(::Nesting{T}) where {T} = T
 
+
+
 """
 NestedValues{T}(u,[v])    
 NestedValues(u,[v])   
@@ -92,7 +94,15 @@ nestings(z::NestedValues) = z.nst
 
 ## Methods for Nesting
 
-==(nv::Nesting, nw::Nesting) = start(nv) == start(nw) && nestings(nv) == nestings(nw)
+==(nv::Nesting, nw::Nesting) = typeof(nv) == typeof(nw) && start(nv) == start(nw) && nestings(nv) == nestings(nw)
+
+function Base.hash(nv::Nesting, h::UInt) 
+    hh = hash(start(nv),h)
+    for n in nestings(nv)
+        hh = hash(n,hh)
+    end
+    return hash(typeof(nv),hh)
+end
 
 """
     next(z)
