@@ -6,15 +6,17 @@ z = NestedValues{Int}(1, nst)
 w = NestedValues(1, nst)
 r = nest(Real,(1,(1//2,π), ℯ))
 i = nest(0,1,1,(2,3,(4,5,5)), (7,7,7))
+u = NestedValues{Int}(0,[i,z])
 
 
 @test start(z) == 1
 @test isempty(nestings(z))
 @test z == w
 @test next(r) == Real[1//2, ℯ]
+@test next(u) == [0,1]
 @test nest(eltype(i),represent(i)) == i
 @test nest(eltype(r),represent(r)) == r
-
+@test nestings(u) == [i,z]
 
 
 z = nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
@@ -38,6 +40,8 @@ w = nest(1,(2,3),4)
 
 @test !allnest(nest(true,(true,true, false),true))
 @test allnest(nest(true,(true,true, true),true))
+@test allnest(map(x -> x isa Int, nest(1,(1,2),3,3)))
 
 @test allnextunique(nest(1,(1,2),2,3))
 @test !allnextunique(nest(1,(1,2),3,3))
+
