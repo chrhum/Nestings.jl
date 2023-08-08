@@ -57,10 +57,11 @@ using Lazy: @forward
 import Base: eltype, show, ==, map, rand
 
 include("nested.jl")
-export Nesting, NestedValues, nest, isnestedtuple, represent,
+export Nesting, NestingCondition, NestedValues, nest, isnestedtuple, represent,
     start, nestings, next, 
     depth, indexdata, indexends,
-    allnest, allnextunique
+    allnest, allnextunique,
+    transform
 
 
 include("gumbel.jl")

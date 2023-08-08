@@ -146,40 +146,57 @@ Construct a copula parametrised by `NestedValues` of archimedean copulas from th
 
 See also: `nestedcopula`. 
 """
-struct NestedCopula{A<:Archimedean} <: Nesting{Copula{A}}
-    nvc::NestedValues{Copula{A}}
-    function NestedCopula{A}(nvc) where A
-        _check_monotonicity(nvc) ||
-            throw(ArgumentError("Monotonicity condition for generators not fulfilled."))
-        return new{A}(nvc)
-    end
-end
+# struct NestedCopula{A<:Archimedean} <: Nesting{Copula{A}}
+#     nvc::NestedValues{Copula{A}}
+#     function NestedCopula{A}(nvc) where A
+#         _check_monotonicity(nvc) ||
+#             throw(ArgumentError("Monotonicity condition for generators not fulfilled."))
+#         return new{A}(nvc)
+#     end
+# end
 
-function _check_monotonicity(g::NestedValues{Copula{A}}) where {A<:Archimedean}
-    for h in nestings(g)
-        generator(start(g)) <= generator(start(h)) || return false
-        _check_monotonicity(h) || return false
-    end
-    return true
-end
+# function _check_monotonicity(g::NestedValues{Copula{A}}) where {A<:Archimedean}
+#     for h in nestings(g)
+#         generator(start(g)) <= generator(start(h)) || return false
+#         _check_monotonicity(h) || return false
+#     end
+#     return true
+# end
 
-parameters(c::NestedCopula) = c.nvc
+# ----> new
 
-NestedCopula(nvc::NestedValues{Copula{A}}) where A = NestedCopula{A}(nvc)
+struct IsMonotone <: NestingCondition end
+const NestedCopula{A<:Archimedean} = NestedValues{Copula{A},IsMonotone}
+
+is_condition_valid(::IsMonotone, z::NestedCopula) = 
+    is_condition_valid(IsIncreasing(), map(generator, z::NestedCopula))
+
+nestedcopula(c...) = nest(typeof(c[1]),IsMonotone(),c)
+
+#dimension(c) and family(c) should just work
+
+Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = transform(z -> z / g, c)
+
+# <---- 
+
+
+
+#parameters(c::NestedCopula) = c.nvc
+
+#NestedCopula(nvc::NestedValues{Copula{A}}) where A = NestedCopula{A}(nvc)
 
 #NestedCopula(c::Copula{A}, vnc::Vector{NestedCopula{A}}) where A = NestedValues
 
-nestedcopula(c...) = NestedCopula(nest(c...))
+#nestedcopula(c...) = NestedCopula(nest(c...))
 
-NestedCopula{Gumbel}(z::NestedValues{Pair{Float64,Int}}) =
-    NestedCopula(map(p -> Copula{Gumbel}(Gumbel(first(p)), last(p)), z))
-nestedgumbel(g...) = NestedCopula{Gumbel}(nest(Pair{Float64,Int},g))
+# NestedCopula{Gumbel}(z::NestedValues{Pair{Float64,Int}}) =
+#     NestedCopula(map(p -> Copula{Gumbel}(Gumbel(first(p)), last(p)), z))
+# nestedgumbel(g...) = NestedCopula{Gumbel}(nest(Pair{Float64,Int},g))
 
-@forward NestedCopula.nvc start
+# @forward NestedCopula.nvc start
 
-nestings(c::NestedCopula{A}) where {A<:Archimedean} = NestedCopula{A}.(nestings(c.nvc)) #forward does not work for this
-map(f::Function, z::NestedCopula) = map(f, z.nvc)
-
+# nestings(c::NestedCopula{A}) where {A<:Archimedean} = NestedCopula{A}.(nestings(c.nvc)) #forward does not work for this
+# map(f::Function, z::NestedCopula) = map(f, z.nvc)
 
 function dimension(c::NestedCopula{<:Archimedean})
     d = dimension(start(c))
@@ -194,9 +211,10 @@ end
 
 The archimedean family of `c` is identified by the type of its generator. 
 """
+#N
 family(::NestedCopula{A}) where {A<:Archimedean} = A
 
-Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = NestedCopula{Gumbel}(map(z -> z / g, c))
+#Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = NestedCopula{Gumbel}(map(z -> z / g, c))
 
 
 """
@@ -204,6 +222,7 @@ Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = NestedCopula{Gumbel}(map(z -> z / 
 
 Evaluate the copula at 
 """
+#N
 function (c::NestedCopula)(u::Vector{Float64})
     dimension(c) > 0 ||
         throw(ArgumentError("copula function in dimesion 0 is not defined"))
@@ -236,6 +255,7 @@ end
 
 Drawing `nsmp` independent samples from copula `c`.
 """
+#N
 function sample(c::NestedCopula{Gumbel}, nsmp::Int)
     smp = rand(dimension(start(c)), nsmp)
 
