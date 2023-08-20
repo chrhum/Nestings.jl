@@ -1,8 +1,3 @@
-# To Do
-# 1. Think about repalcing NestedValues by NestedData and then define const NestedValues{T} = NestedData{T,NoConstraint}
-# 2. Adapt documentation. Don't forget the more gneraal definition of nest where NestedValues themselves and elements of the tuple
-# 3. Work out the user journey for nestedgumbel
-# 4. update main_nestedgumbel
 
 """
 A light framework for handling nested data to facilitate recursive algorithms.
@@ -66,7 +61,6 @@ include("nested.jl")
 export Nesting, NestingCondition, NestedData, NestedValues, 
     start, nestings, 
     nest, next, depth, elements, transform, 
-    isnestedtuple, represent,
     allnest, allnextunique, uniquenext,
     indexdata, indexends
     

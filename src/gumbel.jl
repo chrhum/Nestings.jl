@@ -68,7 +68,6 @@ mvcdf(a::Archimedean, u::Vector{Float64}) = all(u .>= 0) & all(u .<= 1) ?
                                        a(sum(inverse(a)(v) for v in u)) :  # works for any number of marginals
                                        throw(DomainError(u, "all arguments must be between 0 and 1"))
 
-
 ## The Gumbel family
 
 """
@@ -107,12 +106,17 @@ lower_taildep(g::Gumbel) = zero(g.theta)
 
 Base. /(g::Gumbel, h::Gumbel) = Gumbel(g.theta / h.theta)
 
-inverse_laplace_trafo(g::Gumbel) = g.theta > one(g.theta) ?
-                                   AlphaStable(α=1.0 / g.theta, β=1.0, scale=(cos(π / (2.0 * g.theta)))^g.theta) :
-                                   AlphaStable(α=1.0, β=1.0, scale=0.0, location=1.0)
+inverse_laplace_trafo(g::Gumbel) =
+    g.theta > one(g.theta) ?
+    AlphaStable(α=1.0 / g.theta, β=1.0, scale=(cos(π / (2.0 * g.theta)))^g.theta) :
+    AlphaStable(α=1.0, β=1.0, scale=0.0, location=1.0)
 
 ## Node Parameterisation for nested archimedean copulas
+"""
+    Copula(a::Archimedean,n::Integer)
 
+Parameterisation of archimedean copula of family `a` and dimension `n`.
+"""
 struct Copula{A<:Archimedean}
     a::A
     dim::Int
@@ -169,14 +173,12 @@ nestedcopula(c...)
 
 Nest archimedean copulas of the same family. Same syntax as `nest(x...)` for nesting values. 
 
-See also: `nest`
+See also: `nest`, `Copula`.
 
 """
 nestedcopula(c...) = nest(typeof(c[1]),ArchimedeanMonotonicity(),c)
 
-
 Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = transform(z -> z / g, c)
-
 
 function dimension(c::NestedCopula{<:Archimedean})
     d = dimension(start(c))
@@ -197,12 +199,12 @@ function (c::NestedCopula)(u::Vector{Float64})
     dimension(c) > 0 ||
         throw(ArgumentError("copula function in dimesion 0 is not defined"))
     length(u) == dimension(c) ||
-        throw(DomainError(u, "$(dimension(c)) arguments needed, equal to number of copulas marginals."))
+        throw(DomainError(u, "$(dimension(c)) arguments needed."))
     all(0.0 .<= u) && all(u .<= 1.0) ||
-        throw(DomainError(u, "all arguments must be between 0 and 1"))
+        throw(DomainError(u, "All arguments must be between 0 and 1."))
 
     d = dimension(start(c))
-    v = collect(u)
+    v = collect(u) # do not want to modify u in operation below
     q = d == 0 ? similar(v,0) : splice!(v,1:d)
     # same as q, v = v[1:d], v[d+1:end]
     for h in nestings(c)
@@ -214,8 +216,8 @@ function (c::NestedCopula)(u::Vector{Float64})
     mvcdf(generator(start(c)), q)
 end
 
-#  Note that sampling from a nested Gumbel copula  is easier than for the other nested Archimedeans. 
-#  The algorithm below is the origial from McNeil where the special case that 
+#  Note that sampling from a nested Gumbel copula is easier than for the other nested archimedeans. 
+#  The algorithm below is the origial from A. McNeil where the special case that 
 #  the Laplace-Stieltjes transform
 #  used in the recursive step is of the same family as for sampling from the Gumbel copula 
 #  (compare  Tables 3 and 1 
