@@ -2,55 +2,77 @@
 Abstract type for nestings data of the same type recursively.
 
 # Interface 
-Any concrete subtype needs the methods `start` and `nestings`.
+Requires methods `start` and `nestings`.
 """
 abstract type Nesting{T} end
 
 eltype(::Nesting{T}) where {T} = T
 
+"""
+Abstract type for definition of nesting conditions.
+
+Each conrete subtype `C` needs an implementation of `is_condition_valid(::C, z)`.
+
+See also: `HasNoConstraint`, `IsIncreasing`, `NextAreDifferent`.
+"""
 abstract type NestingCondition end
 
+"""
+    Applies no further conditions of nesting. 
+
+See also: `NestedValues`.
+"""
 struct HasNoConstraint <: NestingCondition end
-struct IsIncreasing <: NestingCondition end
-struct NextAreDifferent <: NestingCondition end
-
-
-NestingCondition(::Type{<:Nesting}) = HasNoConstraint()
 
 """
-    NestedValues{T}(u,[v])    
-    NestedValues(u,[v])   
-  
+    Enforces recursively that all elements of a Nesting are `>=` than the predecessor. 
+"""
+struct IsIncreasing <: NestingCondition end
 
-Allows for nesting values of the same type recursively.    
+"""
+    Enforces recursively that the next elements of a `Nesting` are pairwiese different. 
+"""
+struct NextAreDifferent <: NestingCondition end
+
+#NestingCondition(::Type{<:Nesting}) = HasNoConstraint()
+
+"""
+    NestedData{T,C}(u,[v])   
+
+Allows for nesting values of the same type `T` recursively under a nesting condition `C`.
 
 Implements a tree structure (see https://en.wikipedia.org/wiki/Tree_structure) 
 with a value assigned to each node.
 
- # Examples
+ # Example
 
-    NestedValues{Int}(0, [NestedValues{Int}(1), NestedValues{Int}(2)])
-    NestedValues(0, [NestedValues(1,[NestedValues(11), NestedValues(12)]), NestedValues(2)])
+    NestedData{Int, Nestings.IsIncreasing}(0, [NestedData{Int, Nestings.IsIncreasing}(1), NestedData{Int, Nestings.IsIncreasing}(1)])
 
-See also `nest` for an intuitive and simpler construction by nested parentheses.
+See `nest` for an intuitive and simple construction by nested parentheses.
 
+
+See also: `NestingCondition`, `NestedValues`
 """
-struct NestedValues{T,C<:NestingCondition} <: Nesting{T}
+struct NestedData{T,C<:NestingCondition} <: Nesting{T}
     val::T
-    nst::Vector{NestedValues{T}}
-    function NestedValues{T,C}(val, nst) where {T,C}
+    nst::Vector{NestedData{T,C}}
+    function NestedData{T,C}(val, nst) where {T,C}
         z = new{T,C}(val, nst)
         is_condition_valid(z) || throw(ArgumentError("NestingCondition $C not fulfilled"))
         return z
     end
 end
 
-NestingCondition(::Type{NestedValues{T,C}}) where {T,C<: NestingCondition} = C()
-#NestingCondition(::Type{NestedValues{<:Any,C}}) where {C<:NestingCondition} = C()
+NestedData{T,C}(val::T) where {T,C<:NestingCondition} = NestedData{T,C}(val, NestedData{T,C}[])
 
-nesting_condition(::S) where S<:Nesting = NestingCondition(S)
+NestingCondition(::Type{NestedData{T,C}}) where {T,C<:NestingCondition} = C()
+nesting_condition(::NestedData{<:Any,C}) where {C<:NestingCondition} = C()
+
+# define the nesting conditions
 
 is_condition_valid(z::S) where {S<:Nesting} = is_condition_valid(NestingCondition(S), z)
+
+is_condition_valid(c::NestingCondition, z) = error("Validation of $c needs to be defined.")
 is_condition_valid(::HasNoConstraint, z) = true
 is_condition_valid(::NextAreDifferent, z) = allnextunique(z)
 
@@ -62,33 +84,61 @@ function is_condition_valid(::IsIncreasing, z)
     return true
 end
 
-## further constructors 
+# NestedValues
 
-NestedValues{T,C}(val::T) where {T,C<:NestingCondition} = NestedValues{T,C}(val, NestedValues{T,C}[])
-NestedValues{T}(val, nst) where {T} = NestedValues{T,HasNoConstraint}(val, nst)
-NestedValues{T}(val) where {T} = NestedValues{T}(val, NestedValues{T}[])
+"""
+    NestedValues{T}(u,[v])    
+    NestedValues(u,[v])   
+  
+Alias for `NestedData{T,HasNoConstraint}`. 
+
+ # Examples
+
+    NestedValues{Int}(0, [NestedValues{Int}(1), NestedValues{Int}(2)])
+    NestedValues(0, [NestedValues(1,[NestedValues(11), NestedValues(12)]), NestedValues(2)])
+
+See also `nest` for an intuitive and simpler construction by nested parentheses.
+"""
+const NestedValues{T} = NestedData{T,HasNoConstraint}
+
 NestedValues(val, nst) = NestedValues{typeof(val)}(val, nst)
 NestedValues(val) = NestedValues{typeof(val)}(val) #, NestedValues{typeof(val)}[])
 
 """
-    nest(T,t::Tuple)
-
     nest(t...) 
+    nest(T, t::Tuple)
+    nest(nc::NestingCondition, t::Tuple)
+    nest(T, nc, t::Tuple)
 
-Nest the elements of `t`. Provides an intuitive way to construct `NestedValues`.
+Nest the elements of `t`. Provides an intuitive way to construct `NestedValues` and `NestedData`.
 
  # Examples
+
  ```jldoctest
-julia> nest(Real,(1,(1//2,π), sqrt(2)))
+ julia> nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
+NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2")
+
+julia> nest(Real,(1, (1//2, π), sqrt(2)))
 NestedValues{Real}: (1, (1//2, π), 1.4142135623730951)
 
-julia> nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
-NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2")
+julia> nest(Int,Nestings.IsIncreasing(),(1, (1, 3), (2, 2, 2)))
+NestedData{Int64, Nestings.IsIncreasing}: (1, (1, 3), (2, 2, 2))
 ```
 The first element of `t` is the `start` value. The subsequent elements define the `nestings`
 recursively. 
 
-A more stringent but equivalent notation for a "nested tuple" may be along the lines of `s` below: 
+Elements of `t` can also be of type `NestedData` as long as they have no next values. 
+
+```jldoctest
+nest(3, z, 4)
+NestedValues{Int64}: (3, (1, 2), 4)
+
+julia> nest(3, (4, z), 5)
+NestedValues{Int64}: (3, (4, (1, 2)), 5)
+```
+
+A more stringent but equivalent notation for a "nested tuple" along the lines of `s` below is
+supported as well:
 
 ```jldoctest
 julia> s= ("root", ("child1", ("grandchild1",), ("grandchild2",)), ("child2",))
@@ -97,39 +147,30 @@ julia> s= ("root", ("child1", ("grandchild1",), ("grandchild2",)), ("child2",))
 julia> nest(s...) == nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
 true
 ```
-Both notations can be used.
-
 # Remark
 
-The order of the elements of `t` is a Depth-First-Search order for the nested values, 
+The order of the elements of `t` is a Depth-First-Search order of the nested values, 
 see https://en.wikipedia.org/wiki/Depth-first_search.
+
+See also: `isnestedtuple`.
 """
+nest(x...) = nest(typeof(x[1]), x)
+nest(T::DataType, t::Tuple) = nest(T, HasNoConstraint(), t)
+nest(nc::NestingCondition, t::Tuple) = nest(typeof(t[1]), nc, t)
+
 function nest(T::DataType, nc::NestingCondition, t::Tuple)
     t[1] isa T || throw(DomainError(t, "First value of $t must be of type $T."))
     C = typeof(nc)
-    length(t) != 1 || return NestedValues{T,C}(t[1])
-    nst = [z isa T ? NestedValues{T,C}(z) :
-           z isa NestedValues{T,C} ? z : nest(T, nc, z) for z in t[2:end]]
-    return NestedValues{T,C}(t[1], nst)
+    length(t) != 1 || return NestedData{T,C}(t[1])
+    nst = [z isa T ? NestedData{T,C}(z) :
+           z isa NestedData{T,C} ? z : nest(T, nc, z) for z in t[2:end]]
+    return NestedData{T,C}(t[1], nst)
 end
-
-nest(nc::NestingCondition, t::Tuple) = nest(typeof(t[1]), nc, t)
-nest(T::DataType, t::Tuple) = nest(T, HasNoConstraint(), t)
-nest(x...) = nest(typeof(x[1]), x)
-
-# function nest(T::DataType, t::Tuple)
-#     t[1] isa T || throw(DomainError(t, "First value of $t must be of type $T."))
-#     length(t) != 1 || return NestedValues{T}(t[1])
-#     nst = [z isa T ? NestedValues{T}(z) : nest(T, z) for z in t[2:end]]
-#     return NestedValues{T}(t[1], nst)
-# end
-
-# nest(x...) = nest(typeof(x[1]), x)
 
 """
 isnestedtuple(T, t)
 
-Check if tuple `t` is a valid argument for `nest`.
+If `true` then `t` is a valid argument for `nest(t...)` and `nest(T,t))` with `T=typeof(t[1])`.
 """
 function isnestedtuple(T::DataType, t::Tuple)
     t[1] isa T || return false
@@ -161,7 +202,7 @@ julia> start(z)
 3
 ```
 """
-start(z::NestedValues) = z.val
+start(z::NestedData) = z.val
 
 """
     nestings(z)
@@ -179,7 +220,7 @@ nestings(z)
  NestedValues{Int64}: 7
 ```
 """
-nestings(z::NestedValues) = z.nst
+nestings(z::NestedData) = z.nst
 
 ## Methods for Nesting
 
@@ -213,7 +254,30 @@ julia> next(z)
 """
 next(z::Nesting) = map(start, nestings(z))
 
-# show
+"""
+    elements(z::Nesting)
+Retrieve the elements of `z`.
+
+# Example
+```jldoctest
+julia> z = nest(3,(4,2),7)
+NestedValues{Int64}: (3, (4, 2), 7)
+
+julia> elements(z)
+4-element Vector{Int64}:
+ 3
+ 4
+ 2
+ 7
+ ```
+"""
+function elements(z::Nesting)
+    el = [start(z)] #vcat(start(z))
+    for y in nestings(z)
+        append!(el,elements(y))
+    end
+    return el
+end
 
 """
     represent(z) 
@@ -235,7 +299,7 @@ NestedValues{Int64}: (1, 2, (3, 4))
 """
 represent(z::Nesting) = isempty(nestings(z)) ? start(z) : tuple(start(z), represent.(nestings(z))...)
 
-show(io::IO, z::Nesting) = print(io, "$(typeof(z)): $(represent(z))")
+show(io::IO, ::MIME"text/plain", z::Nesting) = print(io,  typeof(z), ": ", represent(z))
 
 """
     depth(z)
@@ -251,6 +315,117 @@ julia> depth(nest("a",("b",("c", "d", "e"), "f"), "g"))
 ```
 """
 depth(z::Nesting) = isempty(nestings(z)) ? zero(Int) : 1 + maximum(depth.(nestings(z)))
+
+"""
+    map(f,z)
+
+Apply type-stable function `f` to each nested value. Type of return is 'NestValues{eltype(f(x))}'.
+
+# Examples
+```jldoctest
+julia> map(x->x^2, nest(1,(2,3),4))
+NestedValues{Int64}: (1, (4, 9), 16)
+```
+"""
+map(f::Function, z::Nesting{T}) where T = map(f, z, NestedValues{typeof(f(start(z)))})
+
+# # The below map2 is faster than map above, but why? The difference is irrelevant, though
+# map2(f::Function, z::Nesting) = isempty(nestings(z)) ? NestedValues(f(start(z))) :
+#                                NestedValues(f(start(z)), [map(f, w) for w in nestings(z)])
+
+function map(f::Function, z::Nesting, ::Type{NestedData{T,C}}) where {T,C}
+    fz = isempty(nestings(z)) ? NestedData{T,C}(f(start(z))) :
+         NestedData{T,C}(f(start(z)), [map(f, w, NestedData{T,C}) for w in nestings(z)])
+    return fz
+end
+
+convert(::Type{NestedData{T,C}}, z::Nesting) where {T,C} = map(identity, z, NestedData{T,C})
+
+"""
+    transform(f, z::NestedData)
+
+Apply `f` provided it preserves both `eltype` and `NestingCondition` of `z`. 
+Return is of the same type as `z`.
+"""
+transform(f::Function, z::NestedData{T,C}) where {T,C} = map(f, z, NestedData{T,C})
+
+
+## other methods
+
+"""
+    allnest(b) -> Bool
+
+Returns `true` if all elements of a boolean nesting are true.  
+# Examples
+```jldoctest
+julia> map(x->x^2, nest(1,(2,3),4))
+NestedValues{Int64}: (1, (4, 9), 16)
+```
+"""
+function allnest(b::Nesting{Bool})
+    start(b) || return false
+    for w in nestings(b)
+        allnest(w) || return false
+    end
+    return true
+end
+
+"""
+    allnextunique(z) -> Bool
+
+Returns `true` if elements of `next(z)` are unique and likewise for all further nestings, recursively.
+# Examples
+ ```jldoctest
+julia> allnextunique(nest(1,(1,2),2,3))
+true
+
+julia> allnextunique(nest(1,(1,2),3,3))
+false
+```
+"""
+function allnextunique(z::Nesting)
+    allunique(next(z)) || return false
+    for w in nestings(z)
+        allnextunique(w) || return false
+    end
+    return true
+end
+
+"""
+    uniquenext(z::Nesting) -> NestedValues{Bool}
+Indicates whether next values are unique.
+"""
+uniquenext(z::Nesting) = isempty(nestings(z)) ? NestedValues{Bool}(allunique(next(z))) : 
+    NestedValues{Bool}(allunique(next(z)),uniquenext.(nestings(z)))
+
+
+
+"""
+    isinitpartof(z, w)
+
+`true` if `z` is contained in `w` from the start of `w`.
+
+# Examples
+```jldoctest
+julia> isinitpartof(nest(1,3), nest(1,2,(3,4)))
+true
+
+julia> isinitpartof(nest(1,4), nest(1,2,(3,4)))
+false
+```
+"""
+function isinitpartof(z::Nesting, w::Nesting) #types of z and w may be differnt by intention
+    start(z) == start(w) || return false
+    for x in nestings(z)
+        isempty(nestings(w)) && return false
+        k = findfirst(start(x) .== next(w))
+        isnothing(k) && return false
+        isinitpartof(x, nestings(w)[k]) || return false
+    end
+    return true
+end
+
+equiv(z::S, w::S) where {S<:Nesting} = isinitpartof(z, w) && isinitpartof(w, z)
 
 """
     indexdata(z)
@@ -318,123 +493,3 @@ function _add_next_indices!(fun, iv, nst)
         merge!(iv, iw)
     end
 end
-
-## methods for concrete types
-
-"""
-    map(f,z)
-
-Apply type-stable function `f` to each nested value. Returns 'NestValues{eltype(f(z)),HasNoConstraint}'
-# Examples
-```jldoctest
-julia> map(x->x^2, nest(1,(2,3),4))
-NestedValues{Int64}: (1, (4, 9), 16)
-```
-"""
-map(f::Function, z::NestedValues) = isempty(nestings(z)) ? NestedValues(f(start(z))) :
-                                    NestedValues(f(start(z)), [map(f, w) for w in nestings(z)])
-
-"""
-    transform(f, z)
-
-Apply `f` which preserves both `eltype` and `NestingCondition` of `z`.
-"""
-function transform(f::Function, z::NestedValues)
-    T = eltype(z)
-    C = typeof(nesting_condition(z))
-    fz = isempty(nestings(z)) ? NestedValues{T,C}(f(start(z))) :
-         NestedValues{T,C}(f(start(z)), [transform(f, w) for w in nestings(z)])
-    return fz
-end
-
-## other methods
-
-"""
-    allnest(b) -> Bool
-
-Returns `true` if all elements of a boolean nesting are true.  
-# Examples
-```jldoctest
-julia> map(x->x^2, nest(1,(2,3),4))
-NestedValues{Int64}: (1, (4, 9), 16)
-```
-"""
-function allnest(b::Nesting{Bool})
-    start(b) || return false
-    for w in nestings(b)
-        allnest(w) || return false
-    end
-    return true
-end
-
-"""
-    allnextunique(z) -> Bool
-
-Returns `true` if elements of `next(z)` are unique and likewise for all further nestings, recursively.
-# Examples
- ```jldoctest
-julia> allnextunique(nest(1,(1,2),2,3))
-true
-
-julia> allnextunique(nest(1,(1,2),3,3))
-false
-```
-"""
-function allnextunique(z::Nesting)
-    allunique(next(z)) || return false
-    for w in nestings(z)
-        allnextunique(w) || return false
-    end
-    return true
-end
-
-"""
-    isinitpartof(z, w)
-
-`true` if `z` is contained in `w` from the start of `w`.
-
-# Examples
-```jldoctest
-julia> isinitpartof(nest(1,3), nest(1,2,(3,4)))
-true
-
-julia> isinitpartof(nest(1,4), nest(1,2,(3,4)))
-false
-```
-"""
-function isinitpartof(z::Nesting, w::Nesting) #types of z and w may be differnt by intention
-    start(z) == start(w) || return false
-    for x in nestings(z)
-        isempty(nestings(w)) && return false
-        k = findfirst(start(x) .== next(w))
-        isnothing(k) && return false
-        isinitpartof(x, nestings(w)[k]) || return false
-    end
-    return true
-end
-
-equiv(z::S, w::S) where {S<:Nesting} = isinitpartof(z, w) && isinitpartof(w, z)
-
-
-"""
-    g, gvals = getdigraph(z)
-
-Tree representation of a `Nesting` as a `SimpelDiGraph` in `Graphs.jl`. 
-Nested data are associated with the nodes. 
-"""
-function getdigraph(z::Nesting)
-    g = SimpleDiGraph(1)
-    gvals = [start(z)]
-    for x in nestings(z)
-        h, hvals = getdigraph(x) # recursively, get the digraph for the nesting x
-        n = nv(g)              # we need n after we modify g below
-        add_vertices!(g, nv(h)) # add vertices of h to g
-        add_edge!(g, 1, n + 1)    # connect the roots
-        append!(gvals, hvals)   # add the values of h
-        for e in edges(h)      # add the edges of h          
-            add_edge!(g, n + e.src, n + e.dst)
-        end
-    end
-    return g, gvals
-end
-

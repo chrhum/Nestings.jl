@@ -1,169 +1,91 @@
 using Revise
 using Nestings
-using Graphs
-#using AlphaStableDistributions 
+using AbstractTrees
+using Plots
+using GraphRecipes
 
-## Nestings
+##  General commment on this nested gumbel implementation:
 
-# This is about the syntax for recursively nesting data
-# Use help, in particular Nestings, NestedValues, nest
+# framework is set up to work for nesting archimedean copulas as described in 
+# https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf
+#
+# The sampling algorithm is only implemented for Gumbel which is easier than others. It is
+# the original one from A. McNeil. 
+# The general case from M Hofert requires different distributions and poses 
+# some numerical problems which are also addressed in the R-package. 
+#
+# The implementation of this case is independent of Copulas.jl
+# Archimedean copulas was not supposed to be part of this and I added it to share my thoughts only. 
+# I am using this nestings stuff elsewhere.
 
-# Examples
+## Suggetsion how to get familar with the implementation.
 
-ambigfun(a,b) = "a,b"
-ambigfun(x...) = "x..."
+#  - Go through this script and use "help". Most types and functions are documented.
+#  - Start with "help Nestings" and "help Archimedean" which contains an intro 
+#    how nestings are handled generally and archimedean families are described. 
 
-ambigfun(a::Int,b::String) =  "a::Int, b::String"
 
-function nest2(T::DataType, t::Tuple)
-    t[1] isa T || throw(DomainError(t, "First value of $t must be of type $T."))
-    length(t) != 1 || return NestedValues{T}(t[1])
-    nst = [z isa T ? NestedValues{T}(z) : 
-        z isa NestedValues{T} ? z : nest2(T, z) for z in t[2:end]]
-    return NestedValues{T}(t[1], nst)
-end
+## Archimedean 
 
-nest2(x...) = nest2(typeof(x[1]), x)
-
-abstract type Condition end
-struct IsDecreasing <:Condition end
-struct NoConstraint <:Condition end
-
-# struct Foo{T,V<:Condition}
-#     x::T
-#     y::T
-#     v::V
-#     function Foo{T,V}(x::T,y::T) where {T,V}
-#         z = new{T,V}(x,y, V())
-#         vali(z) || error("not validated")
-#         return z
-#     end    
-# end
-
-struct Boo{T,V<:Condition}
-    x::T
-    y::T
-    function Boo{T,V}(x::T,y::T) where {T,V}
-        z = new{T,V}(x,y)
-        vali(z) || error("not validated")
-        return z
-    end    
-end
-
-Boo{T}(x,y) where T = Boo{T,NoConstraint}(x,y)
-
-Boo{Int}(2,5)
-
-vali(z::Boo{<:Real,IsDecreasing}) = z.y < z.x
-vali(z::Boo{<:Any,NoConstraint}) = true
-f = Boo{Int,IsDecreasing}(3,2)
-g = Boo{Int,IsDecreasing}(2,3)
-fun(b::Boo) = "generic"
-fun(b::Boo{T,IsDecreasing }) where T  = "specific"
-fun(b::Boo{Int,IsDecreasing}) = "very specific"
-
-fun(Boo{String,NoConstraint}("a","b"))
-fun(Boo{Float64,IsDecreasing}(2.1,2.0))
-fun(Boo{Int,IsDecreasing}(2,1))
-fun2(b::Boo{<:Any,NoConstraint}) = b.x
-##
-
+# generators
 gen0 = Gumbel(1.1)
 gen1 = Gumbel(1.4)
 gen2 = Gumbel(2.0)
-gen11 = Gumbel(2.5)
+gen3 = Gumbel(2.5)
 
-gen2 / gen1
+gen0(3.0)
+inverse(gen0)(0.066)
 
-g0 = Copula{Gumbel}(gen0, 0)
-g1 = Copula{Gumbel}(gen1, 1)
-g2 = Copula{Gumbel}(gen2, 2)
-g11 = Copula{Gumbel}(gen11, 3)
-family(g11)
+# An archimeden copula is defined by a generator and a dimension 
+g0 = Copula(gen0, 0)
+g1 = Copula(gen1, 1)
+g2 = Copula(gen2, 2)  
+g3 = Copula(gen3, 3)
 
+generator(g3)
+family(g3)
+dimension(g3)
+inverse(generator(g3))
 
+## nesting copulas
 
-#g11(0.3, 0.7, 0.9)
+# nest g3 into g1
+h = nestedcopula(g1, g3)
 
-g0.a
-inverse(g0.a)
-h = nestedcopula(g1, g11)
-h([0.3, 0.5, 0.7, 0.9])
 dimension(h)
-c = nestedcopula(g0, (g1, g11), g2)
+
+# evaluate the copula
+h([0.3, 0.5, 0.7, 0.9])
+
+# we can nest h further, say into g0 together with g2
+c = nestedcopula(g0, h, g2)
+
+#This is the same as 
+c == nestedcopula(g0, (g1,g3), g2)
+
 dimension(c)
-@time c([0.4, 0.5, 0.7, 0.8, 0.9, 0.7])
 map(upper_taildep, c)
+nonnestedcomponents =  map(z -> dimension(z),c)
 
-g, vals = Nestings.getdigraph(c)
-
-h = c
-nitr = 10000
-U = Nestings.sample(h, nitr)
-
-u = 1.0 .- rand(dimension(h)) .^ 6
-h(u)
-
-TF = U .< u
-sum(all!(ones(Bool, 1, nitr), TF)) / nitr
+# visualise
+AbstractTrees.children(z::Nesting) = nestings(z)
+AbstractTrees.printnode(io::IO, z::NestedCopula{Gumbel}) = 
+print(io,(generator(start(z)).theta, dimension(start(z))))
+default(size=(1000, 600))
+plot(TreePlot(c), method=:tree, fontsize=7, nodeshape = :ellipse, title = "θ,dim")
 
 
+# sampling
+nsmp = 10000
+U = sample(c, nsmp)
 
+# testing
+u = 1.0 .- rand(dimension(c)) .^ 6 # .^6 so that c(u) is not typically not too small
 
-##
-function qdep(smp, q, lower=true)
-    if !lower
-        return qdep(1.0 .- smp, 1 - q)
-    end
-    Q = similar(smp, size(smp, 1), size(smp, 1))
-    tf = smp .<= q
-    for i = 1:size(smp, 1)
-        for j = i+1:size(smp, 1)
-            Q[i, j] = sum(tf[i, :] .& tf[j, :]) / size(smp, 2) / q
-        end
-    end
-    return Q
-end
+c(u)
 
+# estimate c(u) empirically from the samples U
+TF = U .< u'
+estimate_cu = sum(all!(ones(Bool, nsmp, 1), TF)) / nsmp 
 
-function cplot(C::CoverNetwork)
-    g, v = getdigraph(C)
-    edgec = [ecol(C.links[v[src(e)], v[dst(e)]]) for e in edges(g)]
-    gplot(g, nodefillc=colorant"beige", nodelabel=v, edgestrokec=edgec)
-end
-
-function nestedsample(c::NestedCopula{Gumbel},smp)
-    marginals = map(z -> dimension(z),c)
-    smp = sample(c,nsmp)
-    depth(c) > 0 || return NestedValues(smp)
-    
-end
-
-nsmp = 100
-marginals = map(z -> dimension(z),c)
-smp = sample(c,nsmp)
-
-
-function nestedsample(c::NestedCopula{Gumbel}, nsmp::Int)
-    smp = rand(dimension(start(c)), nsmp)
-    
-    nst = NestedValues{Matrix{Float64}}[]
-
-    for h in nestings(c) # here Gumbel is easier than the other NestedArchimedeans 
-        h1 = h / generator(start(c))
-        push!(nst, nestedsample(h1, nsmp))
-    end
-    z = NestedValues(smp,nst)
-    generator(start(c)).theta > 1.0 + 1e-10 || return z # cannot be distinguished from the independent case
-    v = rand(inverse_laplace_trafo(generator(start(c))), 1, nsmp)
-
-    return map(s -> generator(start(c)).(-log.(s) ./ v),z)
-end
-
-
-struct foo
-    x
-end
-
-#Base.show(io::IO, z::foo) = print(io, "$(typeof(z)): $(z.x)")
-Base.show(io::IO, ::MIME"text/plain", z::foo) = print(io, "$(typeof(z)):", z.x)
+# c(u) and estimated_cu should be close. 

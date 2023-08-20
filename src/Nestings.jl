@@ -1,10 +1,17 @@
+# To Do
+# 1. Think about repalcing NestedValues by NestedData and then define const NestedValues{T} = NestedData{T,NoConstraint}
+# 2. Adapt documentation. Don't forget the more gneraal definition of nest where NestedValues themselves and elements of the tuple
+# 3. Work out the user journey for nestedgumbel
+# 4. update main_nestedgumbel
 
 """
-A very light framework for handling nested data to facilitate recursive algorithms.
+A light framework for handling nested data to facilitate recursive algorithms.
 
-The package provides an abstract type `Nesting` with a light interface 
-and a concrete type `NestedValues`.  
+The package provides an abstract type `Nesting` with an interface 
+and concrete types `NestedData{T,C}` for nesting data of type `T` under a condition `C`.
 
+`NestedValues{T}` is an alias for nesting data of type `T` 
+with no further nesting condition, i.e. `C = Nestings.HasNoConstraint`.
 
 # Construction 
 
@@ -16,7 +23,7 @@ NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2
 ```
 # Interface
 
-Every concrete sub-type of `Nestings` needs an implementation of `start` and `nestings.`
+Every concrete sub-type of `Nesting` needs an implementation of `start` and `nestings.`
 
 ```jldoctest
 julia> start(z)
@@ -41,31 +48,31 @@ Dict{Vector{Int64}, String} with 5 entries:
   [1, 2] => "grandchild2"
   [2]    => "child2"
 ```
-An extension of map is definded for `NestedValues`: 
+An extension of map for `Nesting`: 
 
 ```jldoctest
 julia> map(length,z)
 NestedValues{Int64}: (4, (6, 11, 11), 6)
 ```
-
 """
 module Nestings
 
-using Graphs, AlphaStableDistributions
+using AlphaStableDistributions
 using Lazy: @forward
 
-import Base: eltype, show, ==, map, rand
+import Base: eltype, show, ==, map, convert
 
 include("nested.jl")
-export Nesting, NestingCondition, NestedValues, nest, isnestedtuple, represent,
-    start, nestings, next, 
-    depth, indexdata, indexends,
-    allnest, allnextunique,
-    transform
-
-
+export Nesting, NestingCondition, NestedData, NestedValues, 
+    start, nestings, 
+    nest, next, depth, elements, transform, 
+    isnestedtuple, represent,
+    allnest, allnextunique, uniquenext,
+    indexdata, indexends
+    
 include("gumbel.jl")
 export Archimedean, Gumbel, Copula, NestedCopula, nestedcopula, 
     generator, inverse, inverse_laplace_trafo, dimension,  upper_taildep, lower_taildep, family,
     sample
-end
+
+end #module

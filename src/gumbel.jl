@@ -4,7 +4,7 @@ Abstract type for the families of archimedean copulas.
 
 Concrete subtypes need an implementation of `generator`, its `inverse` and `inverse_laplace_trafo`.
 
-Optional methods are `is_less`, `upper_taildep` and `lower_taildep`.
+Optional methods are `isless`, `upper_taildep` and `lower_taildep`.
 """
 abstract type Archimedean end
 
@@ -113,13 +113,20 @@ inverse_laplace_trafo(g::Gumbel) = g.theta > one(g.theta) ?
 
 ## Node Parameterisation for nested archimedean copulas
 
-
 struct Copula{A<:Archimedean}
     a::A
-    dim::UInt
+    dim::Int
+    Copula{A}(a,dim) where A = dim < zero(dim) ? throw(ArgumentError("Dimension must be >=0")) :
+        new{A}(a,dim)
 end
-
+Copula(a::Archimedean,n::Integer) = Copula{typeof(a)}(a,n) 
 generator(c::Copula{<:Archimedean}) = c.a
+
+"""
+    family(c)
+
+The archimedean family of `c` is identified by the type of its generator. 
+"""
 family(::Copula{A}) where {A<:Archimedean} = A
 
 """
@@ -139,64 +146,37 @@ Base. /(c::Copula{Gumbel}, g::Gumbel) = Copula{Gumbel}(generator(c) / g, dimensi
 #See  https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf
 
 """
+    Enforces monotonicity requirement when nesting archimedean copulas. 
+"""
+struct ArchimedeanMonotonicity <: NestingCondition end
+
+"""
     NestedCopula{A}(nv) 
     NestedCopula(nv)
 
-Construct a copula parametrised by `NestedValues` of archimedean copulas from the same family `A`.
+Alias for `NestedData{Copula{A},ArchimedeanMonotonicity}`. Encodes nested archimedean copulas
+for the familiy `A` as described in https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf
 
 See also: `nestedcopula`. 
 """
-# struct NestedCopula{A<:Archimedean} <: Nesting{Copula{A}}
-#     nvc::NestedValues{Copula{A}}
-#     function NestedCopula{A}(nvc) where A
-#         _check_monotonicity(nvc) ||
-#             throw(ArgumentError("Monotonicity condition for generators not fulfilled."))
-#         return new{A}(nvc)
-#     end
-# end
+const NestedCopula{A<:Archimedean} = NestedData{Copula{A},ArchimedeanMonotonicity}
 
-# function _check_monotonicity(g::NestedValues{Copula{A}}) where {A<:Archimedean}
-#     for h in nestings(g)
-#         generator(start(g)) <= generator(start(h)) || return false
-#         _check_monotonicity(h) || return false
-#     end
-#     return true
-# end
-
-# ----> new
-
-struct IsMonotone <: NestingCondition end
-const NestedCopula{A<:Archimedean} = NestedValues{Copula{A},IsMonotone}
-
-is_condition_valid(::IsMonotone, z::NestedCopula) = 
+is_condition_valid(::ArchimedeanMonotonicity, z::NestedCopula) = 
     is_condition_valid(IsIncreasing(), map(generator, z::NestedCopula))
 
-nestedcopula(c...) = nest(typeof(c[1]),IsMonotone(),c)
+"""
+nestedcopula(c...)
 
-#dimension(c) and family(c) should just work
+Nest archimedean copulas of the same family. Same syntax as `nest(x...)` for nesting values. 
+
+See also: `nest`
+
+"""
+nestedcopula(c...) = nest(typeof(c[1]),ArchimedeanMonotonicity(),c)
+
 
 Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = transform(z -> z / g, c)
 
-# <---- 
-
-
-
-#parameters(c::NestedCopula) = c.nvc
-
-#NestedCopula(nvc::NestedValues{Copula{A}}) where A = NestedCopula{A}(nvc)
-
-#NestedCopula(c::Copula{A}, vnc::Vector{NestedCopula{A}}) where A = NestedValues
-
-#nestedcopula(c...) = NestedCopula(nest(c...))
-
-# NestedCopula{Gumbel}(z::NestedValues{Pair{Float64,Int}}) =
-#     NestedCopula(map(p -> Copula{Gumbel}(Gumbel(first(p)), last(p)), z))
-# nestedgumbel(g...) = NestedCopula{Gumbel}(nest(Pair{Float64,Int},g))
-
-# @forward NestedCopula.nvc start
-
-# nestings(c::NestedCopula{A}) where {A<:Archimedean} = NestedCopula{A}.(nestings(c.nvc)) #forward does not work for this
-# map(f::Function, z::NestedCopula) = map(f, z.nvc)
 
 function dimension(c::NestedCopula{<:Archimedean})
     d = dimension(start(c))
@@ -206,23 +186,13 @@ function dimension(c::NestedCopula{<:Archimedean})
     return d
 end
 
-"""
-    family(c)
-
-The archimedean family of `c` is identified by the type of its generator. 
-"""
-#N
 family(::NestedCopula{A}) where {A<:Archimedean} = A
-
-#Base. /(c::NestedCopula{Gumbel}, g::Gumbel) = NestedCopula{Gumbel}(map(z -> z / g, c))
-
 
 """
     c(u)
 
-Evaluate the copula at 
+Evaluate the copula.
 """
-#N
 function (c::NestedCopula)(u::Vector{Float64})
     dimension(c) > 0 ||
         throw(ArgumentError("copula function in dimesion 0 is not defined"))
@@ -244,27 +214,28 @@ function (c::NestedCopula)(u::Vector{Float64})
     mvcdf(generator(start(c)), q)
 end
 
-#  Note that sampling from a nested Gubel copula  is easier than for the other nested Archimedean. The algorithm
-#  below the origial from McNeil where the special case that the Laplace-Stieltjes transform
+#  Note that sampling from a nested Gumbel copula  is easier than for the other nested Archimedeans. 
+#  The algorithm below is the origial from McNeil where the special case that 
+#  the Laplace-Stieltjes transform
 #  used in the recursive step is of the same family as for sampling from the Gumbel copula 
 #  (compare  Tables 3 and 1 
 #  in Hofert https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf )
-#  The algorithm below would need to be extended so the cases of Algorithm 3.2 in Hofert are covered. 
+#  The algorithm below would need to be extended such that the cases of Algorithm 3.2 in 
+#  Hofert are covered. 
 """
-    sample(c, nsmp)
+    sample(c, n)
 
-Drawing `nsmp` independent samples from copula `c`.
+Draw `n` independent samples from copula `c`.
 """
-#N
-function sample(c::NestedCopula{Gumbel}, nsmp::Int)
-    smp = rand(dimension(start(c)), nsmp)
+function sample(c::NestedCopula{Gumbel}, n::Int)
+    smp = rand(n, dimension(start(c)))
 
     for h in nestings(c) # here Gumbel is easier than the other NestedArchimedeans 
         h1 = h / generator(start(c))
-        smp = [smp; sample(h1, nsmp)]
+        smp = [smp sample(h1, n)]
     end
     generator(start(c)).theta > 1.0 + 1e-10 || return smp # cannot be distinguished from the independent case
-    v = rand(inverse_laplace_trafo(generator(start(c))), 1, nsmp)
+    v = rand(inverse_laplace_trafo(generator(start(c))), n)
 
     return generator(start(c)).(-log.(smp) ./ v)
 end
