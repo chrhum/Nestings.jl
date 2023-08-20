@@ -48,10 +48,9 @@ with a value assigned to each node.
 
     NestedData{Int, Nestings.IsIncreasing}(0, [NestedData{Int, Nestings.IsIncreasing}(1), NestedData{Int, Nestings.IsIncreasing}(1)])
 
-See `nest` for an intuitive and simple construction by nested parentheses.
+Use `nest` for an intuitive and simple construction by nested parentheses.
 
-
-See also: `NestingCondition`, `NestedValues`
+See also: `NestingCondition`, `NestedValues`.
 """
 struct NestedData{T,C<:NestingCondition} <: Nesting{T}
     val::T
@@ -151,8 +150,6 @@ true
 
 The order of the elements of `t` is a Depth-First-Search order of the nested values, 
 see https://en.wikipedia.org/wiki/Depth-first_search.
-
-See also: `isnestedtuple`.
 """
 nest(x...) = nest(typeof(x[1]), x)
 nest(T::DataType, t::Tuple) = nest(T, HasNoConstraint(), t)
@@ -167,24 +164,6 @@ function nest(T::DataType, nc::NestingCondition, t::Tuple)
     return NestedData{T,C}(t[1], nst)
 end
 
-"""
-isnestedtuple(T, t)
-
-If `true` then `t` is a valid argument for `nest(t...)` and `nest(T,t))` with `T=typeof(t[1])`.
-"""
-function isnestedtuple(T::DataType, t::Tuple)
-    t[1] isa T || return false
-    for s in t[2:end]
-        if s isa T
-            nothing
-        elseif s isa Tuple
-            isnestedtuple(T, s) || return false
-        else
-            return false
-        end
-    end
-    return true
-end
 
 ## Interface to be implemented for each concrete subtype of Nesting
 
@@ -256,11 +235,13 @@ next(z::Nesting) = map(start, nestings(z))
 
 """
     elements(z::Nesting)
-Retrieve the elements of `z`.
+Retrieve the elements of `z`. 
+
+The order of `elements(nest(t...))` is the order of the elements of `t` from left to right. 
 
 # Example
 ```jldoctest
-julia> z = nest(3,(4,2),7)
+julia> z = nest(3, (4, 2), 7)
 NestedValues{Int64}: (3, (4, 2), 7)
 
 julia> elements(z)
@@ -272,9 +253,9 @@ julia> elements(z)
  ```
 """
 function elements(z::Nesting)
-    el = [start(z)] #vcat(start(z))
+    el = eltype(z)[start(z)] #vcat(start(z))
     for y in nestings(z)
-        append!(el,elements(y))
+        append!(el, elements(y))
     end
     return el
 end
@@ -283,23 +264,23 @@ end
     represent(z) 
 
 Return a nested tuple which represents `z`. It is an inverse 
-of `nest` for NestedValues.
+of `nest` for `NestedValues{T}` where `T` is concrete. 
 
 # Examples
 ```jldoctest
-julia> z = nest(1,2,(3,4))
+julia> z = nest(1, 2, (3, 4))
 NestedValues{Int64}: (1, 2, (3, 4))
 
-julia> represent(z)
+julia> Nestings.represent(z)
 (1, 2, (3, 4))
 
-julia> w = nest(represent(z)...)
+julia> w = nest(Nestings.represent(z)...)
 NestedValues{Int64}: (1, 2, (3, 4))
 ```
 """
 represent(z::Nesting) = isempty(nestings(z)) ? start(z) : tuple(start(z), represent.(nestings(z))...)
 
-show(io::IO, ::MIME"text/plain", z::Nesting) = print(io,  typeof(z), ": ", represent(z))
+show(io::IO, ::MIME"text/plain", z::Nesting) = print(io, typeof(z), ": ", represent(z))
 
 """
     depth(z)
@@ -323,11 +304,11 @@ Apply type-stable function `f` to each nested value. Type of return is 'NestValu
 
 # Examples
 ```jldoctest
-julia> map(x->x^2, nest(1,(2,3),4))
+julia> map(x->x^2, nest(1, (2, 3), 4))
 NestedValues{Int64}: (1, (4, 9), 16)
 ```
 """
-map(f::Function, z::Nesting{T}) where T = map(f, z, NestedValues{typeof(f(start(z)))})
+map(f::Function, z::Nesting{T}) where {T} = map(f, z, NestedValues{typeof(f(start(z)))})
 
 # # The below map2 is faster than map above, but why? The difference is irrelevant, though
 # map2(f::Function, z::Nesting) = isempty(nestings(z)) ? NestedValues(f(start(z))) :
@@ -358,7 +339,7 @@ transform(f::Function, z::NestedData{T,C}) where {T,C} = map(f, z, NestedData{T,
 Returns `true` if all elements of a boolean nesting are true.  
 # Examples
 ```jldoctest
-julia> map(x->x^2, nest(1,(2,3),4))
+julia> map(x->x^2, nest(1, (2, 3), 4))
 NestedValues{Int64}: (1, (4, 9), 16)
 ```
 """
@@ -376,10 +357,10 @@ end
 Returns `true` if elements of `next(z)` are unique and likewise for all further nestings, recursively.
 # Examples
  ```jldoctest
-julia> allnextunique(nest(1,(1,2),2,3))
+julia> allnextunique(nest(1, (1, 2), 2, 3))
 true
 
-julia> allnextunique(nest(1,(1,2),3,3))
+julia> allnextunique(nest(1, (1, 2), 3, 3))
 false
 ```
 """
@@ -393,17 +374,16 @@ end
 
 """
     uniquenext(z::Nesting) -> NestedValues{Bool}
+
 Indicates whether next values are unique.
 """
-uniquenext(z::Nesting) = isempty(nestings(z)) ? NestedValues{Bool}(allunique(next(z))) : 
-    NestedValues{Bool}(allunique(next(z)),uniquenext.(nestings(z)))
-
-
+uniquenext(z::Nesting) = isempty(nestings(z)) ? NestedValues{Bool}(allunique(next(z))) :
+                         NestedValues{Bool}(allunique(next(z)), uniquenext.(nestings(z)))
 
 """
     isinitpartof(z, w)
 
-`true` if `z` is contained in `w` from the start of `w`.
+Return `true` if `z` is contained in `w` from the start of `w`.
 
 # Examples
 ```jldoctest
@@ -481,6 +461,25 @@ function indexends(z::Nesting{T}) where {T}
     iv = Dict{Vector{Int},T}()
     depth(z) == 0 ? iv[[]] = start(z) : _add_next_indices!(indexends, iv, nestings(z))
     return iv
+end
+
+"""
+isnestedtuple(T, t)
+
+If `true` then `t` is a valid argument for `nest(t...)` and `nest(T,t))` with `T=typeof(t[1])`.
+"""
+function isnestedtuple(T::DataType, t::Tuple)
+    t[1] isa T || return false
+    for s in t[2:end]
+        if s isa T
+            nothing
+        elseif s isa Tuple
+            isnestedtuple(T, s) || return false
+        else
+            return false
+        end
+    end
+    return true
 end
 
 # auxiliary function used in indexdata and indexends

@@ -12,11 +12,12 @@ using GraphRecipes
 # The sampling algorithm is only implemented for Gumbel which is easier than others. It is
 # the original one from A. McNeil. 
 # The general case from M Hofert requires different distributions and poses 
-# some numerical problems which are also addressed in the R-package. 
+# some numerical problems which are addressed in the R-package. 
 #
-# The implementation of this case is independent of Copulas.jl
-# Archimedean copulas was not supposed to be part of this and I added it to share my thoughts only. 
-# I am using this nestings stuff elsewhere.
+# This implementation is independent of Copulas.jl
+# Archimedean copulas are not supposed to be part of this package. 
+# I added it to share my thoughts only.
+
 
 ## Suggetsion how to get familar with the implementation.
 

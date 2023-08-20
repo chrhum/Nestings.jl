@@ -8,19 +8,19 @@ r = nest(Real,(1,(1//2,π), ℯ))
 i = nest(0,1,1,(2,3,(4,5,5)), (7,7,7))
 u = NestedValues{Int}(0,[i,z])
 
-
-
 @test start(z) == 1
 @test isempty(nestings(z))
 @test z == w
 @test next(r) == Real[1//2, ℯ]
 @test next(u) == [0,1]
-@test nest(eltype(i),represent(i)) == i
-@test nest(eltype(r),represent(r)) == r
+@test nest(eltype(i), Nestings.represent(i)) == i
+@test nest(eltype(r), Nestings.represent(r)) == r
 @test nestings(u) == [i,z]
+@test elements(r) == Real[1, 1//2, π, ℯ]
 
 @test nest(0,nest(1,(2,3),4)) == nest(0,(1,(2,3),4))
 
+#
 z = nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
 
 @test eltype(z) == String
