@@ -61,7 +61,7 @@ include("nested.jl")
 export Nesting, NestingCondition, NestedData, NestedValues, 
     start, nestings, 
     nest, next, depth, elements, transform, 
-    allnest, allnextunique, uniquenext,
+    allnested, allnextunique, uniquenext,
     indexdata, indexends
     
 include("gumbel.jl")

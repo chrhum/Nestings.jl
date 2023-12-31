@@ -65,7 +65,6 @@ end
 NestedData{T,C}(val::T) where {T,C<:NestingCondition} = NestedData{T,C}(val, NestedData{T,C}[])
 
 NestingCondition(::Type{NestedData{T,C}}) where {T,C<:NestingCondition} = C()
-nesting_condition(::NestedData{<:Any,C}) where {C<:NestingCondition} = C()
 
 # define the nesting conditions
 
@@ -129,6 +128,7 @@ recursively.
 Elements of `t` can also be of type `NestedData` as long as they have no next values. 
 
 ```jldoctest
+z = nest(1, 2)
 nest(3, z, 4)
 NestedValues{Int64}: (3, (1, 2), 4)
 
@@ -235,6 +235,9 @@ next(z::Nesting) = map(start, nestings(z))
 
 """
     elements(z::Nesting)
+
+
+    elements(z::Nesting)
 Retrieve the elements of `z`. 
 
 The order of `elements(nest(t...))` is the order of the elements of `t` from left to right. 
@@ -250,7 +253,7 @@ julia> elements(z)
  4
  2
  7
- ```
+```
 """
 function elements(z::Nesting)
     el = eltype(z)[start(z)] #vcat(start(z))
@@ -334,19 +337,19 @@ transform(f::Function, z::NestedData{T,C}) where {T,C} = map(f, z, NestedData{T,
 ## other methods
 
 """
-    allnest(b) -> Bool
+    allnested(b) -> Bool
 
 Returns `true` if all elements of a boolean nesting are true.  
 # Examples
 ```jldoctest
-julia> map(x->x^2, nest(1, (2, 3), 4))
-NestedValues{Int64}: (1, (4, 9), 16)
+julia> allnested(nest(true,(true, false),true))
+false
 ```
 """
-function allnest(b::Nesting{Bool})
+function allnested(b::Nesting{Bool})
     start(b) || return false
     for w in nestings(b)
-        allnest(w) || return false
+        allnested(w) || return false
     end
     return true
 end

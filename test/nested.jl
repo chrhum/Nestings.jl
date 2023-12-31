@@ -15,8 +15,8 @@ u = NestedValues{Int}(0,[i,z])
 @test z == w
 @test next(r) == Real[1//2, ℯ]
 @test next(u) == [0,1]
-@test nest(eltype(i),represent(i)) == i
-@test nest(eltype(r),represent(r)) == r
+@test nest(eltype(i), Nestings.represent(i)) == i
+@test nest(eltype(r), Nestings.represent(r)) == r
 @test nestings(u) == [i,z]
 
 @test nest(0,nest(1,(2,3),4)) == nest(0,(1,(2,3),4))
@@ -41,9 +41,9 @@ w = nest(1,(2,3),4)
 @test depth(NestedValues(1)) == 0
 @test depth(nest(1,(2,(3)))) == 2
 
-@test !allnest(nest(true,(true,true, false),true))
-@test allnest(nest(true,(true,true, true),true))
-@test allnest(map(x -> x isa Int, nest(1,(1,2),3,3)))
+@test !allnested(nest(true,(true,true, false),true))
+@test allnested(nest(true,(true,true, true),true))
+@test allnested(map(x -> x isa Int, nest(1,(1,2),3,3)))
 
 @test allnextunique(nest(1,(1,2),2,3))
 @test !allnextunique(nest(1,(1,2),3,3))

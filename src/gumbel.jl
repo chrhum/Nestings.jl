@@ -1,5 +1,7 @@
 ## Archimedean Generators
 """
+    Archimedean
+
 Abstract type for the families of archimedean copulas.
 
 Concrete subtypes need an implementation of `generator`, its `inverse` and `inverse_laplace_trafo`.
@@ -115,7 +117,7 @@ inverse_laplace_trafo(g::Gumbel) =
 """
     Copula(a::Archimedean,n::Integer)
 
-Parameterisation of archimedean copula of family `a` and dimension `n`.
+Parameterisation of archimedean copula with generator `a` and dimension `n`.
 """
 struct Copula{A<:Archimedean}
     a::A
@@ -197,7 +199,7 @@ Evaluate the copula.
 """
 function (c::NestedCopula)(u::Vector{Float64})
     dimension(c) > 0 ||
-        throw(ArgumentError("copula function in dimesion 0 is not defined"))
+        throw(ArgumentError("copula function in dimension 0 is not defined"))
     length(u) == dimension(c) ||
         throw(DomainError(u, "$(dimension(c)) arguments needed."))
     all(0.0 .<= u) && all(u .<= 1.0) ||
@@ -228,6 +230,9 @@ end
     sample(c, n)
 
 Draw `n` independent samples from copula `c`.
+
+The order of the columns of the samples corresponds to the order of `elements(c)`. This is the same  
+as the order of elements of the nested tuple `t` with `c = nestedcopula(t...)`.
 """
 function sample(c::NestedCopula{Gumbel}, n::Int)
     smp = rand(n, dimension(start(c)))
