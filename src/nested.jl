@@ -11,7 +11,7 @@ eltype(::Nesting{T}) where {T} = T
 """
 Abstract type for definition of nesting conditions.
 
-Each conrete subtype `C` needs an implementation of `is_condition_valid(::C, z)`.
+Each concrete subtype `C` needs an implementation of `is_condition_valid(::C, z)`.
 
 See also: `HasNoConstraint`, `IsIncreasing`, `NextAreDifferent`.
 """
