@@ -1,5 +1,7 @@
 """
-Abstract type for nestings data of the same type recursively.
+    Nesting{T}
+
+Abstract type for nesting data of the same type recursively.
 
 # Interface 
 Requires methods `start` and `nestings`.
@@ -9,6 +11,8 @@ abstract type Nesting{T} end
 eltype(::Nesting{T}) where {T} = T
 
 """
+    NestingCondition
+
 Abstract type for definition of nesting conditions.
 
 Each concrete subtype `C` needs an implementation of `is_condition_valid(::C, z)`.
@@ -18,19 +22,25 @@ See also: `HasNoConstraint`, `IsIncreasing`, `NextAreDifferent`.
 abstract type NestingCondition end
 
 """
-    Applies no further conditions of nesting. 
+    HasNoConstraint <: NestingCondition
+
+Applies no further conditions of nesting. 
 
 See also: `NestedValues`.
 """
 struct HasNoConstraint <: NestingCondition end
 
 """
-    Enforces recursively that all elements of a Nesting are `>=` than the predecessor. 
+    IsIncreasing <: NestingCondition
+
+Enforces recursively that all elements of a Nesting are `>=` than the predecessor. 
 """
 struct IsIncreasing <: NestingCondition end
 
 """
-    Enforces recursively that the next elements of a `Nesting` are pairwiese different. 
+    NextAreDifferent <: NestingCondition
+
+Enforces recursively that the next elements of a `Nesting` are pairwiese different. 
 """
 struct NextAreDifferent <: NestingCondition end
 

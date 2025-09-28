@@ -6,9 +6,9 @@ version = "1.0.0-DEV"
 [deps]
 AlphaStableDistributions = "f20549b4-2d50-407f-863c-cdd202ba59a3"
 Lazy = "50d2b5c4-7a5e-59d5-8109-a42b560f39c0"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [compat]
+AlphaStableDistributions = "1.1.7"
 julia = "^1.9"
 
 [extras]
