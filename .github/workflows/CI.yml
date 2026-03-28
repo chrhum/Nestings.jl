@@ -18,7 +18,7 @@ jobs:
         version:
           - '1.10'    # LTS für Stabilität
           - '1.12'    # Deine lokale Version (jetzt explizit)
-          - 'nightly' # Optionaler Blick in die Zukunft
+          #- 'nightly' # Optionaler Blick in die Zukunft
         os:
           - ubuntu-latest
         arch:
