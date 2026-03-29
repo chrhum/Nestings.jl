@@ -1,5 +1,6 @@
-using Revise
+
 using Nestings
+using Nestings.ArchimedeanCopulas
 using AbstractTrees
 using Plots
 using GraphRecipes
