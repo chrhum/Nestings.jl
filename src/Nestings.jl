@@ -52,8 +52,7 @@ NestedValues{Int64}: (4, (6, 11, 11), 6)
 """
 module Nestings
 
-using AlphaStableDistributions
-using Lazy: @forward
+
 
 import Base: eltype, show, ==, map, convert
 
@@ -64,9 +63,6 @@ export Nesting, NestingCondition, NestedData, NestedValues,
     allnested, allnextunique, uniquenext,
     indexdata, indexends
     
-include("gumbel.jl")
-export Archimedean, Gumbel, Copula, NestedCopula, nestedcopula, 
-    generator, inverse, inverse_laplace_trafo, dimension,  upper_taildep, lower_taildep, family,
-    sample
+include("Applications/ArchimedeanCopulas.jl")
 
 end #module

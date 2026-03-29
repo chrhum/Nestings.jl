@@ -167,8 +167,8 @@ See also: `nestedcopula`.
 """
 const NestedCopula{A<:Archimedean} = NestedData{Copula{A},ArchimedeanMonotonicity}
 
-is_condition_valid(::ArchimedeanMonotonicity, z::NestedCopula) = 
-    is_condition_valid(IsIncreasing(), map(generator, z::NestedCopula))
+Nestings.is_condition_valid(::ArchimedeanMonotonicity, z::NestedCopula) = 
+    Nestings.is_condition_valid(Nestings.IsIncreasing(), map(generator, z::NestedCopula))
 
 """
 nestedcopula(c...)
