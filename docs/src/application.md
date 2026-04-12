@@ -1,47 +1,59 @@
-# Applications
-
-## Archimedean Copulas
-
-`Nestings.jl` supports a neat application for nesting Archimedean copulas under monotonicity conditions.
-
-The `ArchimedeanCopulas` submodule defines:
-
-- `Archimedean` — abstract type for Archimedean generator families
-- `Gumbel` — concrete Archimedean generator
-- `Copula` — copula parameterised by an Archimedean generator and dimension
-- `ArchimedeanMonotonicity` — nesting condition that ensures valid nested copulas
-- `NestedCopula{A}` — alias for nested copulas built with a generator family
-- `nestedcopula(c...)` — intuitive constructor for nested copula structures
-
-### Why this fits Nestings
-
-Nested copulas are a natural example of recursive structures with constraints:
-- each copula node carries a generator and a dimension
-- nested children are constrained by Archimedean monotonicity
-- the package uses `NestedData{T,C}` to encode this cleanly
-
-### Example
+# Applications: Archimedean Copulas
+The ArchimedeanCopulas submodule demonstrates how Nestings.jl enforces mathematical constraints on recursive structures.
+## 1. Abstract Framework
+A d-dimensional Archimedean copula is defined as:
+$$C(u_1, \dots, u_d) = \phi(\phi^{-1}(u_1) + \dots + \phi^{-1}(u_d))$$
+where $\phi$ is the generator of the copula.
+For nested Archimedean copulas to be valid, the generators must satisfy specific monotonicity requirements. In Nestings.jl, this is handled by a specialized NestingCondition.
+### Monotonicity and Validation
+The condition ensures that for any two nested generators $\phi_1$ and $\phi_2$ (where $\phi_1$ is the parent), the composition $\phi_1^{-1} \circ \phi_2$ is completely monotonic.
+```@docs
+Nestings.ArchimedeanCopulas.ArchimedeanMonotonicity
+```
+### Core Interface
+The framework defines abstract types and common functions for all Archimedean families.
+```@docs
+Nestings.ArchimedeanCopulas.Archimedean
+Nestings.ArchimedeanCopulas.Copula
+Nestings.ArchimedeanCopulas.NestedCopula
+Nestings.ArchimedeanCopulas.generator
+Nestings.ArchimedeanCopulas.inverse
+Nestings.ArchimedeanCopulas.inverse_laplace_trafo
+Nestings.ArchimedeanCopulas.mvcdf
+```
+## 2. Concrete Implementation: Gumbel
+The Gumbel copula is defined by the generator:
+$$\phi(t) = \exp(-t^{1/\theta}), \quad \theta \ge 1$$
+It is a popular choice for modeling upper tail dependence.
+```@docs
+Nestings.ArchimedeanCopulas.Gumbel
+```
+### Construction
+Use the nestedcopula function for an intuitive, tuple-based construction.
+```@docs
+Nestings.ArchimedeanCopulas.nestedcopula
+```
+### Hierarchical Gumbel structure
+Condition: $\theta_{root} \le \theta_{child}$ (e.g., $1.5 \le 2.0$)
+### Construct the nested copula
 
 ```julia
 using Nestings
-using Nestings.Applications.ArchimedeanCopulas
-
-# Build a Gumbel copula nested under monotonicity
-c = nestedcopula(Gumbel(1.5), Gumbel(2.0), Gumbel(3.0))
-
-# Evaluate the nested copula at a point
-u = [0.2, 0.5, 0.9]
-c(u)
+using Nestings.ArchimedeanCopulas
+Construct the nested copula
+c = nestedcopula(Gumbel(1.5), (Gumbel(2.0), Gumbel(3.0)), Gumbel(2.5))
 ```
+### Calculate the copula value at a specific point
 
-### What is enforced
+```julia
+u = [0.2, 0.5, 0.9, 0.8]
+val = mvcdf(c, u)
+```
+## 3. Statistical Analysis
+The submodule provides tools for sampling and analyzing the dependence structure.
 
-The `ArchimedeanMonotonicity` condition extends `Nestings.IsIncreasing` by checking the generator ordering required for valid nested Archimedean copulas.
-
-### Benefits
-
-- Demonstrates `Nestings.jl` working beyond pure data structures
-- Shows how nesting conditions can enforce domain-specific monotonicity
-- Provides a clear model for nested statistical constructs
-
-For the full API and all nesting utilities, see the API Reference.
+```@docs
+Nestings.ArchimedeanCopulas.sample
+Nestings.ArchimedeanCopulas.lower_taildep
+Nestings.ArchimedeanCopulas.upper_taildep
+```
