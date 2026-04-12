@@ -1,3 +1,12 @@
+"""
+Archimedean copulas reprsent a special class of probability measures on a cube [0,1]^n
+with uniform marginal distributions.
+
+They can be nested under certain monotonicity conditions, see 
+https://cran.r-project.org/web/packages/copula/vignettes/nacopula-pkg.pdf
+
+`Nestings.jl`enables the nesting of Archimedan copuals. 
+"""
 module ArchimedeanCopulas
 
 using ..Nestings

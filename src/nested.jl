@@ -77,12 +77,17 @@ NestedData{T,C}(val::T) where {T,C<:NestingCondition} = NestedData{T,C}(val, Nes
 NestingCondition(::Type{NestedData{T,C}}) where {T,C<:NestingCondition} = C()
 
 # define the nesting conditions
+"""
+    is_condition_valid(c::NestingCondition, z)
 
+    Check if condition c is fulfilled.
+"""
 is_condition_valid(z::S) where {S<:Nesting} = is_condition_valid(NestingCondition(S), z)
 
 is_condition_valid(c::NestingCondition, z) = error("Validation of $c needs to be defined.")
 is_condition_valid(::HasNoConstraint, z) = true
 is_condition_valid(::NextAreDifferent, z) = allnextunique(z)
+
 
 function is_condition_valid(::IsIncreasing, z)
     for w in nestings(z)
