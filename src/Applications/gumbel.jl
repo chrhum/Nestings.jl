@@ -78,14 +78,14 @@ mvcdf(a::Archimedean, u::Vector{Float64}) = all(u .>= 0) & all(u .<= 1) ?
 Encodes the `Gumbel` generator `t -> exp(-t^(1 / theta))`.
 
 # Example
-```jldoctest
+```julia
 julia> g = Gumbel(1.2)
 Gumbel(1.2)
 
-julia> g(2.34)
+julia> g = Gumbel(1.2); g(2.34)
 0.13122268534047923
 
-julia> g.([0,Inf])
+julia> g = Gumbel(1.2); g.([0,Inf])
 2-element Vector{Float64}:
  1.0
  0.0

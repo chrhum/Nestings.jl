@@ -1,5 +1,6 @@
 # Applications: Archimedean Copulas
 The ArchimedeanCopulas submodule demonstrates how Nestings.jl enforces mathematical constraints on recursive structures.
+
 ## 1. Abstract Framework
 A d-dimensional Archimedean copula is defined as:
 $$C(u_1, \dots, u_d) = \phi(\phi^{-1}(u_1) + \dots + \phi^{-1}(u_d))$$
@@ -10,7 +11,7 @@ The condition ensures that for any two nested generators $\phi_1$ and $\phi_2$ (
 ```@docs
 Nestings.ArchimedeanCopulas.ArchimedeanMonotonicity
 ```
-### Core Interface
+### Core Methods
 The framework defines abstract types and common functions for all Archimedean families.
 ```@docs
 Nestings.ArchimedeanCopulas.Archimedean
@@ -19,6 +20,9 @@ Nestings.ArchimedeanCopulas.NestedCopula
 Nestings.ArchimedeanCopulas.generator
 Nestings.ArchimedeanCopulas.inverse
 Nestings.ArchimedeanCopulas.inverse_laplace_trafo
+Nestings.ArchimedeanCopulas.isless
+Nestings.ArchimedeanCopulas.family
+Nestings.ArchimedeanCopulas.dimension
 Nestings.ArchimedeanCopulas.mvcdf
 ```
 ## 2. Concrete Implementation: Gumbel
@@ -38,9 +42,7 @@ Condition: $\theta_{root} \le \theta_{child}$ (e.g., $1.5 \le 2.0$)
 ### Construct the nested copula
 
 ```julia
-using Nestings
-using Nestings.ArchimedeanCopulas
-Construct the nested copula
+
 c = nestedcopula(Gumbel(1.5), (Gumbel(2.0), Gumbel(3.0)), Gumbel(2.5))
 ```
 ### Calculate the copula value at a specific point

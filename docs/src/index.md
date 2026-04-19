@@ -1,10 +1,14 @@
 # Nestings.jl
 
-`Nestings.jl` provides a lightweight framework for recursive data structures. It is designed to facilitate the implementation of recursive algorithms by providing a clear interface for nested data.
+`Nestings.jl` provides a lightweight framework for recursive data structures.
+It is designed to facilitate the implementation of recursive algorithms
+by providing a clear interface for nested data.
 
 ## Overview
 
-`Nestings.jl` provides an abstract type `Nesting` with a clean interface and concrete types for nesting data recursively. The main concrete type is `NestedData{T,C}`, which allows nesting values of type `T` under a nesting condition `C`.
+`Nestings.jl` provides an abstract type `Nesting` with a clean interface and
+concrete types for nesting data recursively. The main concrete type is `NestedData{T,C}`,
+which allows nesting values of type `T` under a nesting condition `C`.
 
 `NestedValues{T}` is a convenient alias for `NestedData{T,HasNoConstraint}` when no constraints are needed.
 
@@ -27,7 +31,7 @@ NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2
 
 ### Interface
 
-Every `Nesting` has two core operations:
+Every concrete sub-type of `Nesting` needs an implementation of `start` and `nestings`:
 
 ```julia
 julia> start(z)
