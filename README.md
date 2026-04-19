@@ -1,6 +1,7 @@
 # Nestings.jl
 
 [![CI](https://github.com/chrhum/Nestings.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/chrhum/Nestings.jl/actions/workflows/CI.yml)
+[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://chrhum.github.io/Nestings.jl/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Julia package for working with nested data structures.
