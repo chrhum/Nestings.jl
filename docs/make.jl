@@ -1,7 +1,6 @@
 using Documenter
 using Nestings
 
-# Optional: can be kept even if you use ```julia instead of ```jldoctest
 DocMeta.setdocmeta!(
     Nestings, 
     :DocTestSetup, 
@@ -23,7 +22,6 @@ makedocs(
         "API Reference" => "api.md",
         "Applications" => "application.md",
     ],
-    # Disable automated testing of code blocks to avoid formatting/Dict errors
     doctest = false,
     warnonly = [:missing_docs, :cross_references, :docs_block],
 )
