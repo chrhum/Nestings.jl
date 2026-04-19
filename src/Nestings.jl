@@ -12,7 +12,7 @@ with no further nesting condition, i.e. `C = Nestings.HasNoConstraint`.
 
 An intuitive way to construct `NestedValues` is as follows:  
 
-```jldoctest
+```julia
 julia> z = nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
 NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2")
 ```
@@ -20,21 +20,21 @@ NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2
 
 Every concrete sub-type of `Nesting` needs an implementation of `start` and `nestings.`
 
-```jldoctest
+```julia; setup = :(z = nest("root", ("child1", "grandchild1", "grandchild2"), "child2"))
 julia> start(z)
 "root"
 
 julia> nestings(z)
 2-element Vector{NestedValues{String}}:
-    NestedValues{String}: ("child1", "grandchild1", "grandchild2")
-    NestedValues{String}: child2
+NestedValues{String}: ("child1", "grandchild1", "grandchild2")
+NestedValues{String}: child2
 ```
 
 # Misc
 
 For each `Nesting` a natural indexation of its data is provided:  
 
-```jldoctest
+```julia; setup = :(z = nest("root", ("child1", "grandchild1", "grandchild2"), "child2"))
 julia> indexdata(z)
 Dict{Vector{Int64}, String} with 5 entries:
   []     => "root"
@@ -45,7 +45,7 @@ Dict{Vector{Int64}, String} with 5 entries:
 ```
 An extension of map for `Nesting`: 
 
-```jldoctest
+```julia
 julia> map(length,z)
 NestedValues{Int64}: (4, (6, 11, 11), 6)
 ```
@@ -64,5 +64,5 @@ export Nesting, NestingCondition, NestedData, NestedValues,
     indexdata, indexends
     
 include("Applications/ArchimedeanCopulas.jl")
-
+#export ArchimedeanCopulas
 end #module

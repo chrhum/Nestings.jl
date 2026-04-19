@@ -77,12 +77,17 @@ NestedData{T,C}(val::T) where {T,C<:NestingCondition} = NestedData{T,C}(val, Nes
 NestingCondition(::Type{NestedData{T,C}}) where {T,C<:NestingCondition} = C()
 
 # define the nesting conditions
+"""
+    is_condition_valid(c::NestingCondition, z)
 
+    Check if condition c is fulfilled.
+"""
 is_condition_valid(z::S) where {S<:Nesting} = is_condition_valid(NestingCondition(S), z)
 
 is_condition_valid(c::NestingCondition, z) = error("Validation of $c needs to be defined.")
 is_condition_valid(::HasNoConstraint, z) = true
 is_condition_valid(::NextAreDifferent, z) = allnextunique(z)
+
 
 function is_condition_valid(::IsIncreasing, z)
     for w in nestings(z)
@@ -122,13 +127,17 @@ Nest the elements of `t`. Provides an intuitive way to construct `NestedValues` 
 
  # Examples
 
- ```jldoctest
- julia> nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
+ ```julia
+julia> nest("root", ("child1", "grandchild1", "grandchild2"), "child2")
 NestedValues{String}: ("root", ("child1", "grandchild1", "grandchild2"), "child2")
+```
 
+```julia
 julia> nest(Real,(1, (1//2, π), sqrt(2)))
 NestedValues{Real}: (1, (1//2, π), 1.4142135623730951)
+```
 
+```julia
 julia> nest(Int,Nestings.IsIncreasing(),(1, (1, 3), (2, 2, 2)))
 NestedData{Int64, Nestings.IsIncreasing}: (1, (1, 3), (2, 2, 2))
 ```
@@ -137,11 +146,15 @@ recursively.
 
 Elements of `t` can also be of type `NestedData` as long as they have no next values. 
 
-```jldoctest
-z = nest(1, 2)
-nest(3, z, 4)
-NestedValues{Int64}: (3, (1, 2), 4)
+```julia
+julia> z = nest(1, 2)
+NestedValues{Int64}: (1, 2)
 
+julia> nest(3, z, 4)
+NestedValues{Int64}: (3, (1, 2), 4)
+```
+
+```julia
 julia> nest(3, (4, z), 5)
 NestedValues{Int64}: (3, (4, (1, 2)), 5)
 ```
@@ -149,7 +162,7 @@ NestedValues{Int64}: (3, (4, (1, 2)), 5)
 A more stringent but equivalent notation for a "nested tuple" along the lines of `s` below is
 supported as well:
 
-```jldoctest
+```julia
 julia> s= ("root", ("child1", ("grandchild1",), ("grandchild2",)), ("child2",))
 ("root", ("child1", ("grandchild1",), ("grandchild2",)), ("child2",))
 
@@ -183,7 +196,7 @@ end
 The start of the series of nested elements of `z`. 
 
 # Example
-```jldoctest
+```julia
 julia> z = nest(3,(4,2),7)
 NestedValues{Int64}: (3, (4, 2), 7)
 
@@ -199,7 +212,7 @@ start(z::NestedData) = z.val
 returns what is nested.
 
 # Example
-```jldoctest
+```julia
 julia> z = nest(3,(4,2),7)
 NestedValues{Int64}: (3, (4, 2), 7)
 
@@ -231,7 +244,7 @@ end
 The elements at the next level of nesting. See also `start` and `nestings`.
 
 # Example
-```jldoctest
+```julia
 julia> z = nest(3,(4,2),7)
 NestedValues{Int64}: (3, (4, 2), 7)
 
@@ -253,7 +266,7 @@ Retrieve the elements of `z`.
 The order of `elements(nest(t...))` is the order of the elements of `t` from left to right. 
 
 # Example
-```jldoctest
+```julia
 julia> z = nest(3, (4, 2), 7)
 NestedValues{Int64}: (3, (4, 2), 7)
 
@@ -280,7 +293,7 @@ Return a nested tuple which represents `z`. It is an inverse
 of `nest` for `NestedValues{T}` where `T` is concrete. 
 
 # Examples
-```jldoctest
+```julia
 julia> z = nest(1, 2, (3, 4))
 NestedValues{Int64}: (1, 2, (3, 4))
 
@@ -300,7 +313,7 @@ show(io::IO, ::MIME"text/plain", z::Nesting) = print(io, typeof(z), ": ", repres
 
 The maximal number of recursive nestings. 
 # Examples
-```jldoctest
+```julia
 julia> depth(NestedValues("no nestings"))
 0
 
@@ -316,7 +329,7 @@ depth(z::Nesting) = isempty(nestings(z)) ? zero(Int) : 1 + maximum(depth.(nestin
 Apply type-stable function `f` to each nested value. Type of return is 'NestValues{eltype(f(x))}'.
 
 # Examples
-```jldoctest
+```julia
 julia> map(x->x^2, nest(1, (2, 3), 4))
 NestedValues{Int64}: (1, (4, 9), 16)
 ```
@@ -351,7 +364,7 @@ transform(f::Function, z::NestedData{T,C}) where {T,C} = map(f, z, NestedData{T,
 
 Returns `true` if all elements of a boolean nesting are true.  
 # Examples
-```jldoctest
+```julia
 julia> allnested(nest(true,(true, false),true))
 false
 ```
@@ -369,7 +382,7 @@ end
 
 Returns `true` if elements of `next(z)` are unique and likewise for all further nestings, recursively.
 # Examples
- ```jldoctest
+ ```julia
 julia> allnextunique(nest(1, (1, 2), 2, 3))
 true
 
@@ -399,7 +412,7 @@ uniquenext(z::Nesting) = isempty(nestings(z)) ? NestedValues{Bool}(allunique(nex
 Return `true` if `z` is contained in `w` from the start of `w`.
 
 # Examples
-```jldoctest
+```julia
 julia> isinitpartof(nest(1,3), nest(1,2,(3,4)))
 true
 
@@ -428,7 +441,7 @@ An indexing of the nested elements.
 The indexation for `nest(x...)` is from left to right. 
 
 # Examples
-```jldoctest
+```julia
 julia> indexdata(nest("no nestings"))
 Dict{Vector{Int64}, String} with 1 entry:
   [] => "no nestings"
@@ -456,7 +469,7 @@ end
 
 An indexing of the ends of the nestings
 # Examples
-```jldoctest
+```julia
 julia> indexends(NestedValues("no nestings"))
 Dict{Vector{Int64}, String} with 1 entry:
   [] => "no nestings"
