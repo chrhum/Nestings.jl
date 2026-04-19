@@ -14,7 +14,7 @@ makedocs(
     authors = "chrhum",
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://chrhum.github.io/Nestings.jl"
+        canonical = "https://chrhum.github.io/Nestings.jl/",
         edit_link = "master",
     ),
     pages = [
@@ -27,7 +27,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "://github.com/chrhum",
+    repo = "github.com/chrhum/Nestings.jl",
     devbranch = "master",
     push_preview = true
 )
